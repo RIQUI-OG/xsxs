@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Lia - Mi Universo</title>
+    <style>
+        :root {
+            --neon-color: #ff0055; /* El color del amor */
+            --bg-color: #020202;
+            --grid-color: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace; /* Fuente tecnológica */
+        }
+
+        /* --- FONDO CARTESIANO Y EJES --- */
+        .grid-background {
+            position: absolute; width: 100%; height: 100%; z-index: -5;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px; background-position: center;
+        }
+        .axis { position: absolute; background-color: var(--neon-color); box-shadow: 0 0 10px var(--neon-color); opacity: 0.3; z-index: -4; }
+        .axis-x { width: 100%; height: 1px; top: 50%; left: 0; }
+        .axis-y { width: 1px; height: 100%; left: 50%; top: 0; }
+
+        /* --- BORDES HUD (Las esquinas) --- */
+        .corner {
+            position: absolute; width: 40px; height: 40px;
+            border: 3px solid var(--neon-color);
+            filter: drop-shadow(0 0 8px var(--neon-color)); z-index: 20; opacity: 0.6;
+            transition: all 0.5s ease;
+        }
+        .top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        /* --- ATMÓSFERA (Estrellas y Partículas) --- */
+        #star-background { position: absolute; width: 100%; height: 100%; z-index: -6; overflow: hidden; }
+        .shooting-star {
+            position: absolute; width: 150px; height: 2px;
+            background: linear-gradient(90deg, white, var(--neon-color), transparent);
+            transform: rotate(-45deg); opacity: 0; animation: shoot linear infinite;
+        }
+        @keyframes shoot {
+            0% { transform: translateX(0) translateY(0) rotate(-45deg); opacity: 1; }
+            100% { transform: translateX(-200vw) translateY(200vh) rotate(-45deg); opacity: 0; }
+        }
+        .particle { position: absolute; background: var(--neon-color); border-radius: 50%; opacity: 0.3; z-index: -1; animation: float linear infinite; }
+        @keyframes float { to { transform: translateY(-120vh); opacity: 0; } }
+
+        /* --- EL CORAZÓN (El protagonista) --- */
+        .heart-container {
+            position: absolute; width: 85vmin; height: 85vmin; z-index: 1;
+            cursor: pointer; /* Indica que se puede hacer click */
+        }
+        #heart-path {
+            fill: transparent;
+            stroke: var(--neon-color); stroke-width: 2px;
+            filter: drop-shadow(0 0 10px var(--neon-color)) drop-shadow(0 0 30px var(--neon-color));
+            stroke-dasharray: var(--path-length); stroke-dashoffset: var(--path-length);
+            /* DIBUJADO LENTO DE 15 SEGUNDOS */
+            transition: stroke-dashoffset 15s ease-in-out;
+        }
+        #heart-path.drawn { stroke-dashoffset: 0; }
+
+        /* Clase que se añade al FINAL del dibujado para que lata */
+        .heart-alive {
+            animation: heartbeat 1.5s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+        }
+        @keyframes heartbeat {
+            0%, 40%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--neon-color)) drop-shadow(0 0 30px var(--neon-color)); opacity: 0.9; }
+            20%, 60% { transform: scale(1.05); filter: drop-shadow(0 0 20px var(--neon-color)) drop-shadow(0 0 60px var(--neon-color)) drop-shadow(0 0 100px var(--neon-color)); opacity: 1; }
+        }
+
+        /* Efecto de onda al hacer click */
+        .click-ripple {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80vmin; height: 80vmin; border-radius: 50%;
+            border: 5px solid var(--neon-color); opacity: 0; pointer-events: none;
+        }
+        .ripple-active { animation: rippleEffect 0.8s ease-out; }
+        @keyframes rippleEffect {
+            0% { width: 0; height: 0; opacity: 0.8; border-width: 10px; }
+            100% { width: 150vmax; height: 150vmax; opacity: 0; border-width: 1px; }
+        }
+
+        /* --- TEXTOS E INTERFAZ --- */
+        .foreground-content { position: relative; z-index: 30; text-align: center; pointer-events: none; top: 5%; }
+        
+        /* Título Principal */
+        h1.main-title {
+            font-size: 4rem; margin: 0; color: white; letter-spacing: 8px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px var(--neon-color), 0 0 60px var(--neon-color);
+            /* Animación de entrada suave */
+            opacity: 0; transform: translateY(-20px); transition: all 2s ease-out;
+        }
+        h1.title-visible { opacity: 1; transform: translateY(0); }
+
+        /* Subtítulo "Máquina de escribir" */
+        .subtitle-container {
+            margin-top: 20px;
+            display: inline-block;
+            overflow: hidden; /* Esencial para el efecto */
+            white-space: nowrap; /* Mantiene el texto en una línea */
+            border-right: 3px solid var(--neon-color); /* El cursor */
+            width: 0; /* Empieza oculto */
+            opacity: 0;
+        }
+        
+        /* La animación se activa con JS */
+        .subtitle-typing {
+            opacity: 1;
+            animation: 
+                typing 4s steps(40, end) forwards, /* Escribe el texto */
+                blink-caret .75s step-end infinite; /* Parpadeo del cursor */
+        }
+        
+        h2.subtitle-text {
+            font-size: 1.2rem; color: rgba(255,255,255,0.9); margin: 0; letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-color);
+        }
+
+        @keyframes typing { from { width: 0; } to { width: 100%; } }
+        @keyframes blink-caret { from, to { border-color: transparent; } 50% { border-color: var(--neon-color); }}
+
+        /* Selector de color (discreto abajo) */
+        .controls-wrapper {
+            position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 40; pointer-events: auto;
+        }
+        .controls {
+            background: rgba(0, 0, 0, 0.6); padding: 8px; border-radius: 50%;
+            border: 2px solid var(--neon-color); display: inline-block;
+            transition: transform 0.3s;
+        }
+        .controls:hover { transform: scale(1.1); }
+        input[type="color"] { cursor: pointer; border: none; width: 35px; height: 35px; background: none; display: block; padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border-radius: 50%; border: 1px solid white; }
+    </style>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+    <div class="axis axis-x"></div>
+    <div class="axis axis-y"></div>
+    <div class="corner top-left"></div>
+    <div class="corner top-right"></div>
+    <div class="corner bottom-left"></div>
+    <div class="corner bottom-right"></div>
+    <div id="star-background"></div>
+
+    <div class="heart-container" id="mainHeartContainer">
+        <svg viewBox="0 0 512 512" width="100%" height="100%" id="heartSvg">
+            <path id="heart-path" d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3 0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/>
+        </svg>
+        <div class="click-ripple" id="ripple"></div>
+    </div>
+
+    <div class="foreground-content">
+        <h1 class="main-title" id="mainTitle">Te amo Lia</h1>
+        <br>
+        <div class="subtitle-container" id="subtitleContainer">
+            <h2 class="subtitle-text">Eres mi coordenada favorita en este universo.</h2>
+        </div>
+    </div>
+
+    <div class="controls-wrapper">
+        <div class="controls" title="Cambia el color de nuestro universo">
+            <input type="color" id="colorPicker" value="#ff0055">
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const heartPath = document.getElementById('heart-path');
+            const heartSvg = document.getElementById('heartSvg');
+            const mainTitle = document.getElementById('mainTitle');
+            const subtitleContainer = document.getElementById('subtitleContainer');
+            const heartContainer = document.getElementById('mainHeartContainer');
+            const ripple = document.getElementById('ripple');
+            // const music = document.getElementById('bgMusic'); // Opcional música
+
+            // 1. Configuración Inicial
+            const pathLength = heartPath.getTotalLength();
+            document.documentElement.style.setProperty('--path-length', pathLength);
+
+            // 2. Secuencia de Animación
+            setTimeout(() => {
+                // A) Aparece el título principal suavemente
+                mainTitle.classList.add('title-visible');
+                
+                // B) Empieza a dibujarse el corazón (tarda 15s)
+                heartPath.classList.add('drawn');
+                
+                // C) Intentar iniciar música suavemente (opcional)
+                // if(music) { music.volume = 0.3; music.play().catch(e => console.log("Click necesario para música")); }
+
+            }, 1000);
+
+
+            // 3. El "Momento Mágico": Cuando termina de dibujarse
+            // Escuchamos el evento 'transitionend' que se dispara a los 15s
+            heartPath.addEventListener('transitionend', () => {
+                // A) El corazón cobra vida (empieza a latir fuerte)
+                heartSvg.classList.add('heart-alive');
+                
+                // B) Se activa el subtítulo tipo máquina de escribir
+                subtitleContainer.classList.add('subtitle-typing');
+            }, { once: true }); // 'once: true' asegura que solo pase una vez
+
+
+            // 4. Interactividad: Click en el corazón
+            heartContainer.addEventListener('click', () => {
+                // Reinicia la animación del ripple
+                ripple.classList.remove('ripple-active');
+                void ripple.offsetWidth; // Truco para reiniciar el reflow CSS
+                ripple.classList.add('ripple-active');
+            });
+
+
+            // 5. Generadores de Ambiente (Estrellas y Partículas)
+            const starBg = document.getElementById('star-background');
+            for (let i = 0; i < 35; i++) {
+                const star = document.createElement('div');
+                star.className = 'shooting-star';
+                star.style.left = (Math.random() * 160 - 30) + 'vw';
+                star.style.top = (Math.random() * -100) + 'px';
+                star.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                star.style.animationDelay = Math.random() * 10 + 's';
+                starBg.appendChild(star);
+            }
+            for (let i = 0; i < 50; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 3 + 1 + 'px';
+                p.style.width = size; p.style.height = size;
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.top = Math.random() * 100 + 'vh';
+                p.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                document.body.appendChild(p);
+            }
+
+            // 6. Control de Color
+            document.getElementById('colorPicker').addEventListener('input', (e) => {
+                document.documentElement.style.setProperty('--neon-color', e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>
